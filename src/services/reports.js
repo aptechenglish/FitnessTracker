@@ -1,7 +1,11 @@
 import api from "./api";
 
 const token = () => localStorage.getItem("token");
-const BASE = "http://localhost:5000";
+const BASE = import.meta.env.VITE_API_URL
+  ? import.meta.env.VITE_API_URL.replace("/api", "")
+  : import.meta.env.PROD
+    ? "https://fitness-tracker-backend-ten.vercel.app"
+    : "http://localhost:5000";
 
 const download = async (endpoint, filename) => {
   const res = await fetch(`${BASE}${endpoint}`, {
