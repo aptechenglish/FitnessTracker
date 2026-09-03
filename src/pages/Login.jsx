@@ -19,6 +19,7 @@ const Login = () => {
     password: "",
   });
   const [loading, setLoading] = useState(false);
+  const [showLoader, setShowLoader] = useState(false);
   const [showLoginPwd, setShowLoginPwd] = useState(false);
   const [showRegPwd, setShowRegPwd] = useState(false);
 
@@ -45,7 +46,10 @@ const Login = () => {
         password: loginForm.password,
       });
       toast.success("Login successful!");
-      navigate("/welcome");
+      setShowLoader(true);
+      setTimeout(() => {
+        navigate("/welcome");
+      }, 2600);
     } catch (error) {
       toast.error(error.response?.data?.message || "Login failed");
     } finally {
@@ -71,8 +75,11 @@ const Login = () => {
         email: regForm.email,
         password: regForm.password,
       });
-      toast.success("Account created successfully!");
-      navigate("/welcome");
+      toast.success("Account created! Please login with your new account.");
+      setLoginForm((f) => ({ ...f, username: regForm.username }));
+      setRegForm({ username: "", email: "", password: "" });
+      flip();
+      window.scrollTo(0, 0);
     } catch (error) {
       toast.error(error.response?.data?.message || "Registration failed");
     } finally {
@@ -257,6 +264,20 @@ const Login = () => {
           </div>
         </div>
       </div>
+
+      {showLoader && (
+        <div className="auth-loader" style={{ position: "fixed", inset: 0, zIndex: 9999, background: "#090909", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 24 }}>
+          <img
+            src={logo}
+            alt="Fitness Tracker Logo"
+            className="auth-logo-pulse auth-logo-img"
+          />
+          <div className="auth-loader-line">
+            <span></span>
+          </div>
+          <p style={{ color: "#8a8a8a", fontSize: "0.9rem", margin: 0 }}>Preparing your dashboard...</p>
+        </div>
+      )}
     </div>
   );
 };

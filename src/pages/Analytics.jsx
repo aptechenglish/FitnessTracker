@@ -21,6 +21,7 @@ import {
 import { getWorkoutAnalytics, getNutritionAnalytics } from "../services/analytics";
 import Sidebar from "../components/Sidebar";
 import Icon from "../components/Icon";
+import Reveal from "../components/Reveal";
 
 ChartJS.register(
   CategoryScale,
@@ -67,34 +68,33 @@ const Analytics = () => {
           <p className="text-gray-600 mt-1">Workout & Nutrition analytics with charts</p>
         </div>
 
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-6 text-white mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
+        <Reveal>
+        <div className="vip-banner flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+          <div className="relative z-10">
             <h2 className="text-xl font-bold flex items-center gap-2"><Icon name="workouts" className="w-5 h-5" /> Workout Analytics</h2>
             <p className="text-white/80 text-sm mt-1">
               {workoutData?.totals?.totalWorkouts || 0} workouts ·{" "}
               {workoutData?.totals?.totalCaloriesBurned || 0} calories burned in selected period
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 relative z-10">
             {[7, 30, 90].map((p) => (
               <button
                 key={p}
                 onClick={() => setWorkoutPeriod(String(p))}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                  workoutPeriod === String(p)
-                    ? "bg-white text-indigo-700"
-                    : "bg-white/20 hover:bg-white/30"
-                }`}
+                className={`vip-chip ${workoutPeriod === String(p) ? "vip-chip-active" : ""}`}
               >
                 {p} days
               </button>
             ))}
           </div>
         </div>
+        </Reveal>
 
+        <Reveal>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Weight Lifting Progress</h3>
+          <div className="vip-card p-6">
+            <h3 className="vip-card-title mb-4"><span className="vip-accent"><Icon name="workouts" className="w-4 h-4" /></span>Weight Lifting Progress</h3>
             {liftsOnly.length > 0 ? (
               <div className="h-64 sm:h-80 w-full min-w-0">
                 <Line
@@ -124,8 +124,8 @@ const Analytics = () => {
             )}
           </div>
 
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Workout Frequency</h3>
+          <div className="vip-card p-6">
+            <h3 className="vip-card-title mb-4"><span className="vip-accent"><Icon name="flame" className="w-4 h-4" /></span>Workout Frequency</h3>
             <div className="h-64 sm:h-80 w-full min-w-0">
               <Bar
                 data={{
@@ -149,8 +149,8 @@ const Analytics = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Calories Burned Over Time</h3>
+          <div className="vip-card p-6">
+            <h3 className="vip-card-title mb-4"><span className="vip-accent"><Icon name="activity" className="w-4 h-4" /></span>Calories Burned Over Time</h3>
             <div className="h-64 sm:h-80 w-full min-w-0">
               <Line
                 data={{
@@ -176,8 +176,8 @@ const Analytics = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Workout Categories</h3>
+          <div className="vip-card p-6">
+            <h3 className="vip-card-title mb-4"><span className="vip-accent"><Icon name="sparkles" className="w-4 h-4" /></span>Workout Categories</h3>
             <div className="max-h-64 sm:max-h-80 w-full min-w-0 flex items-center justify-center">
               <Doughnut
                 data={{
@@ -195,14 +195,16 @@ const Analytics = () => {
             </div>
           </div>
         </div>
+        </Reveal>
 
         {workoutData?.exerciseHistory?.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-lg p-6 mb-10">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Exercise History</h3>
+          <Reveal>
+          <div className="vip-card p-6 mb-10">
+            <h3 className="vip-card-title mb-4"><span className="vip-accent"><Icon name="workouts" className="w-4 h-4" /></span>Exercise History</h3>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="bg-gray-50">
-                  <tr className="text-sm text-gray-500">
+                <thead className="bg-gray-800/60">
+                  <tr className="text-sm text-gray-400">
                     <th className="px-4 py-3 font-medium">Exercise</th>
                     <th className="px-4 py-3 font-medium">Date</th>
                     <th className="px-4 py-3 font-medium">Sets</th>
@@ -216,49 +218,49 @@ const Analytics = () => {
                     .sort((a, b) => new Date(b.date) - new Date(a.date))
                     .slice(0, 15)
                     .map((ex, i) => (
-                      <tr key={i} className="border-t hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm font-medium text-gray-800">{ex.name}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600">
+                      <tr key={i} className="border-t hover:bg-gray-800/40 transition-colors">
+                        <td className="px-4 py-3 text-sm font-medium text-gray-100">{ex.name}</td>
+                        <td className="px-4 py-3 text-sm text-gray-400">
                           {new Date(ex.date).toLocaleDateString()}
                         </td>
-                        <td className="px-4 py-3 text-sm">{ex.sets}</td>
-                        <td className="px-4 py-3 text-sm">{ex.reps}</td>
-                        <td className="px-4 py-3 text-sm">{ex.weight > 0 ? `${ex.weight} kg` : "—"}</td>
+                        <td className="px-4 py-3 text-sm text-gray-200">{ex.sets}</td>
+                        <td className="px-4 py-3 text-sm text-gray-200">{ex.reps}</td>
+                        <td className="px-4 py-3 text-sm text-gray-200">{ex.weight > 0 ? `${ex.weight} kg` : "—"}</td>
                       </tr>
                     ))}
                 </tbody>
               </table>
             </div>
           </div>
+          </Reveal>
         )}
 
-        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-6 text-white mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
+        <Reveal>
+        <div className="vip-banner flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+          <div className="relative z-10">
             <h2 className="text-xl font-bold flex items-center gap-2"><Icon name="utensils" className="w-5 h-5" /> Nutrition Analytics</h2>
             <p className="text-white/80 text-sm mt-1">
               {nutritionData?.totalEntries || 0} entries · avg {nutritionData?.avgCalories || 0} cal/meal
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 relative z-10">
             {[7, 30, 90].map((p) => (
               <button
                 key={p}
                 onClick={() => setNutritionPeriod(String(p))}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                  nutritionPeriod === String(p)
-                    ? "bg-white text-emerald-700"
-                    : "bg-white/20 hover:bg-white/30"
-                }`}
+                className={`vip-chip ${nutritionPeriod === String(p) ? "vip-chip-active" : ""}`}
               >
                 {p} days
               </button>
             ))}
           </div>
         </div>
+        </Reveal>
 
+        <Reveal>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Daily Calories</h3>
+          <div className="vip-card p-6">
+            <h3 className="vip-card-title mb-4"><span className="vip-accent"><Icon name="flame" className="w-4 h-4" /></span>Daily Calories</h3>
             <div className="h-64 sm:h-80 w-full min-w-0">
               <Bar
                 data={{
@@ -282,8 +284,8 @@ const Analytics = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Macro Consumption Trend (g)</h3>
+          <div className="vip-card p-6">
+            <h3 className="vip-card-title mb-4"><span className="vip-accent"><Icon name="nutrition" className="w-4 h-4" /></span>Macro Consumption Trend (g)</h3>
             <div className="h-64 sm:h-80 w-full min-w-0">
               <Line
                 data={{
@@ -304,8 +306,8 @@ const Analytics = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Macro Totals (selected period)</h3>
+          <div className="vip-card p-6">
+            <h3 className="vip-card-title mb-4"><span className="vip-accent"><Icon name="scale" className="w-4 h-4" /></span>Macro Totals (selected period)</h3>
             <div className="max-h-64 sm:max-h-80 w-full min-w-0 flex items-center justify-center">
               <Pie
                 data={{
@@ -327,8 +329,8 @@ const Analytics = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Meals by Type</h3>
+          <div className="vip-card p-6">
+            <h3 className="vip-card-title mb-4"><span className="vip-accent"><Icon name="utensils" className="w-4 h-4" /></span>Meals by Type</h3>
             <div className="max-h-64 sm:max-h-80 w-full min-w-0 flex items-center justify-center">
               <Doughnut
                 data={{
@@ -348,6 +350,7 @@ const Analytics = () => {
             </div>
           </div>
         </div>
+        </Reveal>
       </main>
     </Sidebar>
   );

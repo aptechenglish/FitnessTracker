@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Sidebar from "../components/Sidebar";
 import Icon from "../components/Icon";
+import Reveal from "../components/Reveal";
 import { getDashboardStats } from "../services/dashboard";
 import logo from "../assets/images/logo.png";
 import { Line, Bar, Doughnut } from "react-chartjs-2";
@@ -173,67 +174,73 @@ const Dashboard = () => {
   return (
     <Sidebar>
       <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
-          <div className="flex items-center gap-3">
-            <img src={logo} alt="Fitness Tracker Logo" className="w-12 h-12 object-contain" />
+        <Reveal>
+          <div className="vip-banner flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3 relative z-10">
+            <img src={logo} alt="Fitness Tracker Logo" className="w-14 h-14 object-contain drop-shadow-[0_0_14px_rgba(229,57,53,0.5)]" />
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold">
                 Welcome, {user?.name?.split(" ")[0] || "Athlete"}
               </h1>
-              <p className="text-sm text-gray-600 mt-0.5">
+              <p className="text-sm text-white/75 mt-0.5">
                 Here's your overall fitness overview
               </p>
             </div>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 relative z-10">
             <Link
               to="/workouts"
-              className="bg-gradient-to-br from-[#c62828] to-[#e53935] hover:brightness-110 text-white px-5 py-2 rounded-xl font-semibold text-sm transition shadow-[0_4px_14px_-4px_rgba(229,57,53,0.55)] border border-red-400/30"
+              className="vip-btn-primary px-5 py-2.5 rounded-xl font-semibold text-sm flex items-center gap-1.5"
             >
               + Workout
             </Link>
             <Link
               to="/nutrition"
-              className="bg-[#1a1a1a] hover:bg-gray-800 text-white px-5 py-2 rounded-xl font-semibold text-sm transition shadow-md border border-gray-700"
+              className="bg-[#1a1a1a] hover:bg-gray-800 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition shadow-md border border-white/15"
             >
               + Food
             </Link>
           </div>
         </div>
+        </Reveal>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
-          {cards.map((card) => (
-            <div
-              key={card.title}
-              className="stat-card rounded-2xl p-5 text-white transform hover:scale-105 transition duration-300"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <Icon name={card.icon} className="w-7 h-7 text-[#e53935] shrink-0" />
+          {cards.map((card, i) => (
+            <Reveal key={card.title} delay={i * 0.08}>
+              <div
+                className="stat-card rounded-2xl p-5 text-white transform hover:scale-105 transition duration-300"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <Icon name={card.icon} className="w-7 h-7 text-[#e53935] shrink-0" />
+                </div>
+                <p className="text-xs text-gray-400">{card.title}</p>
+                <p className="text-xl font-bold mt-1">{card.value}</p>
+                <p className="text-xs text-gray-500 mt-1">{card.change}</p>
               </div>
-              <p className="text-xs text-gray-400">{card.title}</p>
-              <p className="text-xl font-bold mt-1">{card.value}</p>
-              <p className="text-xs text-gray-500 mt-1">{card.change}</p>
-            </div>
+            </Reveal>
           ))}
         </div>
 
+        <Reveal>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white rounded-2xl shadow-lg p-6">
+          <div className="vip-card p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-gray-800">Weight Progress</h2>
-              <Link to="/progress" className="text-sm text-indigo-600 hover:underline inline-flex items-center gap-1">
+              <h2 className="vip-card-title"><span className="vip-accent"><Icon name="activity" className="w-4 h-4" /></span>Weight Progress</h2>
+              <Link to="/progress" className="text-sm text-[#e53935] hover:underline inline-flex items-center gap-1">
                 View all <Icon name="arrowRight" className="w-4 h-4" />
               </Link>
             </div>
             {(data?.weightProgress || []).length > 1 ? (
-              <Line
-                data={weightChart}
-                options={{
-                  responsive: true,
-                  plugins: { legend: { position: "top" }, tooltip: { mode: "index", intersect: false } },
-                  scales: { y: { beginAtZero: false } },
-                }}
-              />
+              <div className="chart-container">
+                <Line
+                  data={weightChart}
+                  options={{
+                    responsive: true,
+                    plugins: { legend: { position: "top" }, tooltip: { mode: "index", intersect: false } },
+                    scales: { y: { beginAtZero: false } },
+                  }}
+                />
+              </div>
             ) : (
               <div className="text-center py-12 text-gray-400">
                 <Icon name="scale" className="w-10 h-10 mx-auto mb-3" />
@@ -242,11 +249,12 @@ const Dashboard = () => {
             )}
           </div>
 
-          <div className="bg-white rounded-2xl shadow-lg p-6">
+          <div className="vip-card p-6">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-semibold text-gray-800">Weekly Activity</h2>
-              <span className="text-xs text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">Calories burned</span>
+              <h2 className="vip-card-title"><span className="vip-accent"><Icon name="flame" className="w-4 h-4" /></span>Weekly Activity</h2>
+              <span className="text-xs text-gray-400 bg-gray-800 border border-gray-700 px-2.5 py-1 rounded-full">Calories burned</span>
             </div>
+            <div className="chart-container">
             <Bar
               data={weeklyChart}
               options={{
@@ -277,12 +285,16 @@ const Dashboard = () => {
                 },
               }}
             />
+            </div>
           </div>
         </div>
+        </Reveal>
 
+        <Reveal>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Daily Nutrition</h2>
+          <div className="vip-card p-6">
+            <h2 className="vip-card-title mb-4"><span className="vip-accent"><Icon name="utensils" className="w-4 h-4" /></span>Daily Nutrition</h2>
+            <div className="chart-container">
             <Doughnut
               data={nutritionDoughnut}
               options={{
@@ -292,14 +304,15 @@ const Dashboard = () => {
                 plugins: { legend: { position: "bottom" } },
               }}
             />
+            </div>
             <div className="mt-4 text-center bg-gray-800 border border-gray-700 rounded-xl p-4 text-white">
               <p className="text-3xl font-bold text-[#e53935]">{data?.summary.totalCaloriesIn?.toLocaleString() || 0}</p>
               <p className="text-sm text-gray-400">calories consumed today</p>
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-5">Recent Workouts</h2>
+          <div className="vip-card p-6">
+            <h2 className="vip-card-title mb-5"><span className="vip-accent"><Icon name="workouts" className="w-4 h-4" /></span>Recent Workouts</h2>
             {(data?.recentWorkouts || []).length > 0 ? (
               <div className="space-y-3">
                 {data.recentWorkouts.map((w) => {
@@ -329,8 +342,8 @@ const Dashboard = () => {
             )}
           </div>
 
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-5">Recent Nutrition</h2>
+          <div className="vip-card p-6">
+            <h2 className="vip-card-title mb-5"><span className="vip-accent"><Icon name="nutrition" className="w-4 h-4" /></span>Recent Nutrition</h2>
             {(data?.recentNutrition || []).length > 0 ? (
               <div className="space-y-3">
                 {data.recentNutrition.map((f) => {
@@ -358,9 +371,11 @@ const Dashboard = () => {
             )}
           </div>
         </div>
+        </Reveal>
 
-        <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-6">Goals</h2>
+        <Reveal>
+        <div className="vip-card p-6">
+          <h2 className="vip-card-title mb-6"><span className="vip-accent"><Icon name="goals" className="w-4 h-4" /></span>Goals</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {goals.map((goal) => (
               <div key={goal.name} className="flex items-center gap-4">
@@ -381,6 +396,7 @@ const Dashboard = () => {
             ))}
           </div>
         </div>
+        </Reveal>
       </main>
     </Sidebar>
   );

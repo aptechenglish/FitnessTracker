@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getFoods, updateFood, deleteFood, getFoodStats } from "../services/foods";
 import Sidebar from "../components/Sidebar";
 import Icon from "../components/Icon";
+import Reveal from "../components/Reveal";
 import toast from "react-hot-toast";
 
 const MEAL_TYPES = [
@@ -138,62 +139,62 @@ const Nutrition = () => {
   return (
     <Sidebar>
       <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Nutrition Tracking</h1>
-            <p className="text-gray-600 mt-1">Track your daily food intake and macros</p>
+        <div className="vip-banner flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+          <div className="relative z-10">
+            <h1 className="text-3xl font-bold flex items-center gap-3"><Icon name="utensils" className="w-7 h-7" /> Nutrition Tracking</h1>
+            <p className="text-white/75 mt-1">Track your daily food intake and macros</p>
           </div>
           <button
             onClick={openAdd}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg font-semibold transition flex items-center gap-2"
+            className="vip-btn-primary px-6 py-2.5 rounded-lg font-semibold transition flex items-center gap-2 relative z-10"
           >
             <span className="text-lg">+</span> Add Food
           </button>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-800">
-              Daily Summary
-            </h2>
+        <Reveal>
+        <div className="vip-card p-6 mb-8">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="vip-card-title"><span className="vip-accent"><Icon name="nutrition" className="w-4 h-4" /></span>Daily Summary</h2>
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="px-3 py-2 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-[#0f0f0f] text-white"
             />
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-            <div className="bg-gradient-to-br from-red-500 to-orange-500 rounded-xl p-5 text-white">
+            <div className="bg-gradient-to-br from-[#c62828] to-[#e53935] rounded-xl p-5 text-white border border-red-400/30 shadow-[0_8px_18px_-8px_rgba(229,57,53,0.6)]">
               <div className="flex justify-between">
                 <Icon name="flame" className="w-8 h-8 text-white/90" />
               </div>
-              <p className="text-sm text-white/80">Calories</p>
+              <p className="text-sm text-white/85">Calories</p>
               <p className="text-2xl font-bold">{stats?.totals.calories || 0}</p>
               <p className="text-xs text-white/70">{stats?.entries || 0} entries</p>
             </div>
-            <div className="bg-white border rounded-xl p-5">
-              <Icon name="workouts" className="w-8 h-8 text-emerald-500" />
-              <p className="text-sm text-gray-500 mt-2">Protein</p>
+            <div className="vip-card rounded-xl p-5">
+              <Icon name="workouts" className="w-8 h-8 text-[#e53935]" />
+              <p className="text-sm text-gray-400 mt-2">Protein</p>
               <p className="text-2xl font-bold">{stats?.totals.protein || 0}g</p>
             </div>
-            <div className="bg-white border rounded-xl p-5">
-              <Icon name="wheat" className="w-8 h-8 text-amber-500" />
-              <p className="text-sm text-gray-500 mt-2">Carbs</p>
+            <div className="vip-card rounded-xl p-5">
+              <Icon name="wheat" className="w-8 h-8 text-[#e53935]" />
+              <p className="text-sm text-gray-400 mt-2">Carbs</p>
               <p className="text-2xl font-bold">{stats?.totals.carbs || 0}g</p>
             </div>
-            <div className="bg-white border rounded-xl p-5">
-              <Icon name="droplet" className="w-8 h-8 text-blue-500" />
-              <p className="text-sm text-gray-500 mt-2">Fat</p>
+            <div className="vip-card rounded-xl p-5">
+              <Icon name="droplet" className="w-8 h-8 text-[#e53935]" />
+              <p className="text-sm text-gray-400 mt-2">Fat</p>
               <p className="text-2xl font-bold">{stats?.totals.fat || 0}g</p>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {macroBar("Protein", stats?.totals.protein || 0, "bg-emerald-500")}
-            {macroBar("Carbs", stats?.totals.carbs || 0, "bg-amber-500")}
-            {macroBar("Fat", stats?.totals.fat || 0, "bg-blue-500")}
+            {macroBar("Protein", stats?.totals.protein || 0, "bg-[#e53935]")}
+            {macroBar("Carbs", stats?.totals.carbs || 0, "bg-[#c62828]")}
+            {macroBar("Fat", stats?.totals.fat || 0, "bg-[#8a2a2a]")}
           </div>
         </div>
+        </Reveal>
 
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <input
@@ -220,26 +221,26 @@ const Nutrition = () => {
             <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : foods.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-lg p-16 text-center">
-            <Icon name="utensils" className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">No food entries for this day</h3>
+          <div className="vip-card p-16 text-center">
+            <Icon name="utensils" className="w-16 h-16 mx-auto mb-4 text-gray-500" />
+            <h3 className="text-xl font-semibold text-gray-200 mb-2">No food entries for this day</h3>
             <p className="text-gray-500 mb-6">Log your first meal to start tracking your nutrition!</p>
-            <button onClick={openAdd} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-semibold transition">
+            <button onClick={openAdd} className="vip-btn-primary px-6 py-3 rounded-lg font-semibold transition">
               Add Food
             </button>
           </div>
         ) : (
+          <Reveal>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {foods.map((food) => {
               const meal = getMealInfo(food.mealType);
               return (
-                <div key={food._id} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition">
-                  <div className="p-6">
+                <div key={food._id} className="vip-card hover:shadow-xl transition p-6">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3">
-                        <Icon name={meal.icon} className="w-8 h-8 text-gray-500 shrink-0" />
+                        <Icon name={meal.icon} className="w-8 h-8 text-[#e53935] shrink-0" />
                         <div>
-                          <h3 className="font-semibold text-gray-900">{food.foodName}</h3>
+                          <h3 className="font-semibold text-gray-100">{food.foodName}</h3>
                           {food.quantity && <p className="text-sm text-gray-500">{food.quantity}</p>}
                         </div>
                       </div>
@@ -249,35 +250,35 @@ const Nutrition = () => {
                     </div>
 
                     <div className="flex justify-center mb-3">
-                      <p className="text-3xl font-bold text-gray-800">{food.calories}</p>
+                      <p className="text-3xl font-bold text-gray-100">{food.calories}</p>
                       <span className="text-gray-500"> cal</span>
                     </div>
 
                     <div className="flex gap-2 justify-center my-3">
-                      <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded inline-flex items-center gap-1"><Icon name="workouts" className="w-3.5 h-3.5" /> {food.protein}g</span>
-                      <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded inline-flex items-center gap-1"><Icon name="wheat" className="w-3.5 h-3.5" /> {food.carbs}g</span>
-                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded inline-flex items-center gap-1"><Icon name="droplet" className="w-3.5 h-3.5" /> {food.fat}g</span>
+                      <span className="text-xs bg-[#2a1010] text-[#e53935] px-2 py-1 rounded inline-flex items-center gap-1"><Icon name="workouts" className="w-3.5 h-3.5" /> {food.protein}g</span>
+                      <span className="text-xs bg-[#2a1010] text-[#e53935] px-2 py-1 rounded inline-flex items-center gap-1"><Icon name="wheat" className="w-3.5 h-3.5" /> {food.carbs}g</span>
+                      <span className="text-xs bg-[#2a1010] text-[#e53935] px-2 py-1 rounded inline-flex items-center gap-1"><Icon name="droplet" className="w-3.5 h-3.5" /> {food.fat}g</span>
                     </div>
 
                     <div className="flex gap-3 mt-4 border-t pt-4">
                       <button
                         onClick={() => openEdit(food)}
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-sm font-medium transition"
+                        className="flex-1 vip-btn-primary py-2 rounded-lg text-sm font-medium transition"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDelete(food._id)}
-                        className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg text-sm font-medium transition"
+                        className="flex-1 bg-[#2a2a2a] hover:bg-gray-700 text-white py-2 rounded-lg text-sm font-medium transition"
                       >
                         Delete
                       </button>
                     </div>
-                  </div>
                 </div>
               );
             })}
           </div>
+          </Reveal>
         )}
       </main>
 

@@ -1,7 +1,9 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useLocation, BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import SmoothScroll from "./components/SmoothScroll";
+import PageTransition from "./components/PageTransition";
 import Login from "./pages/Login";
 import Welcome from "./pages/Welcome";
 import Dashboard from "./pages/Dashboard";
@@ -24,22 +26,22 @@ import NutritionAdd from "./pages/NutritionAdd";
 import ProgressAdd from "./pages/ProgressAdd";
 import ProfileEdit from "./pages/ProfileEdit";
 
-function App() {
+function AppRoutes() {
+  const location = useLocation();
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Navigate to="/welcome" replace />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Login />} />
-          <Route
-            path="/welcome"
-            element={
-              <ProtectedRoute>
-                <Welcome />
-              </ProtectedRoute>
-            }
-          />
+    <PageTransition key={location.pathname}>
+      <Routes location={location}>
+        <Route path="/" element={<Navigate to="/welcome" replace />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Login />} />
+        <Route
+          path="/welcome"
+          element={
+            <ProtectedRoute>
+              <Welcome />
+            </ProtectedRoute>
+          }
+        />
           <Route
             path="/dashboard"
             element={
@@ -194,6 +196,16 @@ function App() {
           />
           <Route path="*" element={<Navigate to="/welcome" replace />} />
         </Routes>
+      </PageTransition>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <SmoothScroll />
+        <AppRoutes />
       </BrowserRouter>
       <Toaster
         position="top-right"

@@ -20,6 +20,7 @@ import {
 } from "../services/measurements";
 import Sidebar from "../components/Sidebar";
 import Icon from "../components/Icon";
+import Reveal from "../components/Reveal";
 import toast from "react-hot-toast";
 
 ChartJS.register(
@@ -263,30 +264,27 @@ const Progress = () => {
   return (
     <Sidebar>
       <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Progress Tracking</h1>
-            <p className="text-gray-600 mt-1">Record your weight, measurements, running & lifting progress</p>
+        <div className="vip-banner flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+          <div className="relative z-10">
+            <h1 className="text-3xl font-bold flex items-center gap-3"><Icon name="progress" className="w-7 h-7" /> Progress Tracking</h1>
+            <p className="text-white/75 mt-1">Record your weight, measurements, running & lifting progress</p>
           </div>
           <button
             onClick={openAdd}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg font-semibold transition flex items-center gap-2"
+            className="vip-btn-primary px-6 py-2.5 rounded-lg font-semibold transition flex items-center gap-2 relative z-10"
           >
             <span className="text-lg">+</span> Add Entry
           </button>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+        <Reveal>
+        <div className="vip-card p-6 mb-8">
           <div className="flex flex-wrap gap-2 mb-5">
             {chartTypes.map((t) => (
               <button
                 key={t.value}
                 onClick={() => setChartType(t.value)}
-                className={`px-4 py-2 rounded-lg font-medium transition inline-flex items-center gap-1.5 ${
-                  chartType === t.value
-                    ? "bg-indigo-600 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
+                className={`vip-chip ${chartType === t.value ? "vip-chip-active" : ""}`}
               >
                 <Icon name={t.icon} className="w-4 h-4" /> {t.label}
               </button>
@@ -299,8 +297,9 @@ const Progress = () => {
             </div>
           ) : chartMap[chartType].data && chartMap[chartType].data.datasets[0].data.length > 1 ? (
             <div>
-              <div className="flex items-center gap-2 mb-4">
-                <h2 className="text-lg font-semibold text-gray-800">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="vip-accent"><Icon name="analytics" className="w-4 h-4" /></span>
+                <h2 className="vip-card-title">
                   {chartMap[chartType].label} Progress
                 </h2>
               </div>
@@ -313,33 +312,35 @@ const Progress = () => {
               <Icon name="progress" className="w-14 h-14 mx-auto mb-4 text-gray-300" />
               <h3 className="text-lg font-semibold text-gray-800 mb-2">Not enough data yet</h3>
               <p className="text-gray-500 mb-4">Record at least 2 entries for this metric to see the chart</p>
-              <button onClick={openAdd} className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg font-semibold transition">
+              <button onClick={openAdd} className="vip-btn-primary px-5 py-2 rounded-lg font-semibold transition">
                 Add Entry
               </button>
             </div>
           )}
         </div>
+        </Reveal>
 
         {loading ? (
           <div className="flex justify-center py-20">
             <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : measurements.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-lg p-16 text-center">
-            <Icon name="sparkles" className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">No progress entries yet</h3>
+          <div className="vip-card p-16 text-center">
+            <Icon name="sparkles" className="w-16 h-16 mx-auto mb-4 text-gray-500" />
+            <h3 className="text-xl font-semibold text-gray-200 mb-2">No progress entries yet</h3>
             <p className="text-gray-500 mb-6">Start logging your measurements to track your fitness journey!</p>
-            <button onClick={openAdd} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-semibold transition">
+            <button onClick={openAdd} className="vip-btn-primary px-6 py-3 rounded-lg font-semibold transition">
               Add First Entry
             </button>
           </div>
         ) : (
           <div>
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">History</h2>
-            <div className="bg-white rounded-2xl shadow-lg overflow-x-auto">
+            <Reveal>
+            <p className="vip-section-label">History</p>
+            <div className="vip-card overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="bg-gray-50">
-                  <tr className="text-sm text-gray-500">
+                <thead className="bg-gray-800/60">
+                  <tr className="text-sm text-gray-400">
                     <th className="px-6 py-3 font-medium">Date</th>
                     <th className="px-6 py-3 font-medium">Weight</th>
                     <th className="px-6 py-3 font-medium">Body Fat</th>
@@ -351,24 +352,24 @@ const Progress = () => {
                 </thead>
                 <tbody>
                   {measurements.map((m) => (
-                    <tr key={m._id} className="border-t hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm text-gray-700">{fmtDate(m.date)}</td>
-                      <td className="px-6 py-4 text-sm">{m.weight > 0 ? `${m.weight} kg` : "—"}</td>
-                      <td className="px-6 py-4 text-sm">{m.bodyFat > 0 ? `${m.bodyFat}%` : "—"}</td>
-                      <td className="px-6 py-4 text-sm">{m.measurements?.waist > 0 ? `${m.measurements.waist} cm` : "—"}</td>
-                      <td className="px-6 py-4 text-sm">{m.running?.distance > 0 ? `${m.running.distance} km` : "—"}</td>
-                      <td className="px-6 py-4 text-sm">{m.lifting?.benchPress > 0 ? `${m.lifting.benchPress} kg` : "—"}</td>
+                    <tr key={m._id} className="border-t hover:bg-gray-800/40 transition-colors">
+                      <td className="px-6 py-4 text-sm text-gray-300">{fmtDate(m.date)}</td>
+                      <td className="px-6 py-4 text-sm text-gray-200">{m.weight > 0 ? `${m.weight} kg` : "—"}</td>
+                      <td className="px-6 py-4 text-sm text-gray-200">{m.bodyFat > 0 ? `${m.bodyFat}%` : "—"}</td>
+                      <td className="px-6 py-4 text-sm text-gray-200">{m.measurements?.waist > 0 ? `${m.measurements.waist} cm` : "—"}</td>
+                      <td className="px-6 py-4 text-sm text-gray-200">{m.running?.distance > 0 ? `${m.running.distance} km` : "—"}</td>
+                      <td className="px-6 py-4 text-sm text-gray-200">{m.lifting?.benchPress > 0 ? `${m.lifting.benchPress} kg` : "—"}</td>
                       <td className="px-6 py-4">
                         <div className="flex gap-2">
                           <button
                             onClick={() => openEdit(m)}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-medium transition"
+                            className="vip-btn-primary px-3 py-1.5 rounded text-xs font-medium transition"
                           >
                             Edit
                           </button>
                           <button
                             onClick={() => handleDelete(m._id)}
-                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-xs font-medium transition"
+                            className="bg-[#2a2a2a] hover:bg-gray-700 text-white px-3 py-1.5 rounded text-xs font-medium transition"
                           >
                             Delete
                           </button>
@@ -379,6 +380,7 @@ const Progress = () => {
                 </tbody>
               </table>
             </div>
+            </Reveal>
           </div>
         )}
       </main>
