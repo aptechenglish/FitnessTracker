@@ -13,6 +13,7 @@ const Profile = () => {
     email: user?.email || "",
     gender: user?.gender || "",
     height: user?.height || "",
+    weight: user?.weight || "",
     dateOfBirth: user?.dateOfBirth ? user.dateOfBirth.split("T")[0] : "",
     fitnessGoal: user?.fitnessGoal || "general_fitness",
     profilePicture: user?.profilePicture || "",
@@ -95,6 +96,16 @@ const Profile = () => {
                   <p className="text-sm text-gray-500">Height</p>
                   <p className="font-medium text-gray-800">
                     {form.height ? `${form.height} cm` : "Not set"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl">
+                <Icon name="scale" className="w-7 h-7 text-gray-500" />
+                <div>
+                  <p className="text-sm text-gray-500">Weight</p>
+                  <p className="font-medium text-gray-800">
+                    {form.weight ? `${form.weight} kg` : "Not set"}
                   </p>
                 </div>
               </div>

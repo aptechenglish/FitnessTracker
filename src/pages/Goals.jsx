@@ -2,7 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 import Sidebar from "../components/Sidebar";
 import Icon from "../components/Icon";
 import toast from "react-hot-toast";
+import { useAuth } from "../context/AuthContext";
 import { getGoals, createGoal, updateGoal, deleteGoal } from "../services/goals";
+import { updateProfile } from "../services/auth";
 
 const TYPE_META = {
   weight: { icon: "scale", label: "Weight", color: "bg-rose-100 text-rose-700" },
@@ -23,7 +25,7 @@ const STATUS_STYLE = {
 
 const emptyGoal = () => ({
   title: "",
-  type: "other",
+  type: "weight",
   target: "",
   unit: "kg",
   currentValue: "",
@@ -31,7 +33,86 @@ const emptyGoal = () => ({
   notes: "",
 });
 
+// Automated Nutrition & Workout Plan Generator
+export const generatePlanFromTargetWeight = (targetWeightNum, currentWeightNum, user) => {
+  const current = Number(currentWeightNum) || Number(user?.weight) || 75;
+  const target = Number(targetWeightNum);
+  if (!target || target <= 0) return null;
+
+  const diff = target - current;
+  const isLosing = diff < 0;
+  const isGaining = diff > 0;
+  const absDiff = Math.abs(diff);
+
+  // Maintenance calories calculation
+  const baseTDEE = Math.round(current * 31);
+  let dailyCalories = baseTDEE;
+  let deficitOrSurplus = 0;
+  let weeklyRateKg = 0.5;
+
+  if (isLosing) {
+    deficitOrSurplus = -500;
+    dailyCalories = Math.max(1350, baseTDEE - 500);
+    weeklyRateKg = 0.5;
+  } else if (isGaining) {
+    deficitOrSurplus = 300;
+    dailyCalories = baseTDEE + 300;
+    weeklyRateKg = 0.25;
+  }
+
+  // Macro distribution
+  const proteinGrams = Math.round(current * 2.0); // 2g per kg
+  const fatGrams = Math.round((dailyCalories * 0.25) / 9);
+  const carbGrams = Math.max(50, Math.round((dailyCalories - (proteinGrams * 4 + fatGrams * 9)) / 4));
+
+  const estimatedWeeks = Math.max(1, Math.ceil(absDiff / weeklyRateKg));
+
+  const workoutPlan = isLosing
+    ? {
+        title: "Fat Loss & Metabolic Conditioning Split",
+        frequency: "4 - 5 Days / Week",
+        weeklyBurnTarget: 2200,
+        routines: [
+          { day: "Day 1", name: "Upper Body Push & Incline Cardio", burn: "450 cal", desc: "Bench press, incline dumbbells, pushups + 15m incline walk" },
+          { day: "Day 2", name: "Legs, Glutes & Core Focus", burn: "520 cal", desc: "Squats, lunges, leg press + plank holds & leg raises" },
+          { day: "Day 3", name: "Active Recovery & Mobility", burn: "150 cal", desc: "6,000 steps brisk walk & full body stretching" },
+          { day: "Day 4", name: "Upper Body Pull & Rowing HIIT", burn: "480 cal", desc: "Deadlifts, bent-over rows, pullups + 15m rowing" },
+          { day: "Day 5", name: "Full Body Functional Burn", burn: "600 cal", desc: "Burpees, kettlebell swings, jump rope intervals" },
+        ],
+      }
+    : {
+        title: "Lean Muscle Hypertrophy & Strength Split",
+        frequency: "4 Days / Week",
+        weeklyBurnTarget: 1600,
+        routines: [
+          { day: "Day 1", name: "Chest & Triceps Power", burn: "380 cal", desc: "Heavy flat barbell press, dips, skull crushers" },
+          { day: "Day 2", name: "Back & Biceps Volume", burn: "400 cal", desc: "Barbell rows, lat pulldowns, hammer curls" },
+          { day: "Day 3", name: "Rest & High-Protein Loading", burn: "100 cal", desc: "Rest day with clean surplus nutrition" },
+          { day: "Day 4", name: "Quads, Hamstrings & Calves", burn: "460 cal", desc: "Back squats, Romanian deadlifts, calf raises" },
+          { day: "Day 5", name: "Shoulders & Core Stability", burn: "360 cal", desc: "Overhead barbell press, lateral raises, ab wheel" },
+        ],
+      };
+
+  return {
+    diff,
+    isLosing,
+    isGaining,
+    absDiff,
+    current,
+    target,
+    baseTDEE,
+    dailyCalories,
+    deficitOrSurplus,
+    proteinGrams,
+    carbGrams,
+    fatGrams,
+    estimatedWeeks,
+    workoutPlan,
+  };
+};
+
 const Goals = () => {
+  const { user } = useAuth();
   const [goals, setGoals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
@@ -39,6 +120,7 @@ const Goals = () => {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(emptyGoal());
   const [saving, setSaving] = useState(false);
+  const [syncToProfile, setSyncToProfile] = useState(true);
 
   const load = useCallback(async (status) => {
     setLoading(true);
@@ -54,11 +136,18 @@ const Goals = () => {
 
   useEffect(() => {
     load(filter);
+    const handleUpdate = () => load(filter);
+    window.addEventListener("fitness_data_updated", handleUpdate);
+    return () => window.removeEventListener("fitness_data_updated", handleUpdate);
   }, [load, filter]);
 
   const openAdd = () => {
     setEditing(null);
-    setForm(emptyGoal());
+    setForm({
+      ...emptyGoal(),
+      currentValue: user?.weight ? String(user.weight) : "75",
+      target: user?.targetWeight ? String(user.targetWeight) : "",
+    });
     setShowModal(true);
   };
 
@@ -76,6 +165,12 @@ const Goals = () => {
     setShowModal(true);
   };
 
+  // Live generated plan
+  const autoPlan =
+    form.type === "weight" && form.target
+      ? generatePlanFromTargetWeight(form.target, form.currentValue, user)
+      : null;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.title.trim()) {
@@ -84,13 +179,47 @@ const Goals = () => {
     }
     setSaving(true);
     try {
+      let finalNotes = form.notes;
+      if (autoPlan) {
+        const planSummary = `\n[Auto-Plan: ${autoPlan.dailyCalories} kcal/day (${autoPlan.deficitOrSurplus > 0 ? "+" : ""}${autoPlan.deficitOrSurplus} kcal) | Macros: ${autoPlan.proteinGrams}g P, ${autoPlan.carbGrams}g C, ${autoPlan.fatGrams}g F | Routine: ${autoPlan.workoutPlan.title}]`;
+        if (!finalNotes.includes("[Auto-Plan:")) {
+          finalNotes = (finalNotes + planSummary).trim();
+        }
+      }
+
+      const goalPayload = {
+        ...form,
+        notes: finalNotes,
+      };
+
       if (editing) {
-        await updateGoal(editing, form);
+        await updateGoal(editing, goalPayload);
         toast.success("Goal updated!");
       } else {
-        await createGoal(form);
+        await createGoal(goalPayload);
         toast.success("Goal created!");
       }
+
+      // Sync recommended calorie target & target weight to profile if requested
+      if (syncToProfile && autoPlan) {
+        try {
+          await updateProfile({
+            targetCalories: autoPlan.dailyCalories,
+            targetWeight: Number(form.target),
+          });
+          toast.success(`Daily Nutrition Goal set to ${autoPlan.dailyCalories} kcal!`);
+        } catch (profErr) {
+          console.error("Profile sync error:", profErr);
+        }
+      }
+
+      // Dispatch event to refresh Dashboard and other pages
+      window.dispatchEvent(
+        new CustomEvent("fitness_data_updated", {
+          detail: { type: "goal", plan: autoPlan },
+        })
+      );
+
       setShowModal(false);
       load(filter);
     } catch (error) {
@@ -307,6 +436,108 @@ const Goals = () => {
                   />
                 </div>
               </div>
+
+              {/* AUTOMATICALLY GENERATED NUTRITION & WORKOUT PLAN */}
+              {autoPlan && (
+                <div className="p-4 rounded-xl bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-funky font-bold text-xs uppercase text-indigo-700 flex items-center gap-1.5">
+                      ⚡ Automated Nutrition & Workout Plan
+                    </span>
+                    <span
+                      className={`text-[10px] font-tech font-bold px-2 py-0.5 rounded-full ${
+                        autoPlan.isLosing ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"
+                      }`}
+                    >
+                      {autoPlan.isLosing
+                        ? `Weight Loss: -${autoPlan.absDiff.toFixed(1)} kg`
+                        : `Muscle Gain: +${autoPlan.absDiff.toFixed(1)} kg`}
+                    </span>
+                  </div>
+
+                  {/* Daily Calorie Intake & Macros */}
+                  <div className="p-3 bg-white rounded-lg border border-indigo-100">
+                    <div className="flex items-baseline justify-between mb-2">
+                      <div>
+                        <span className="text-[10px] uppercase font-tech text-gray-400 block">
+                          Recommended Daily Intake
+                        </span>
+                        <span className="text-xl font-funky font-extrabold text-indigo-600">
+                          {autoPlan.dailyCalories.toLocaleString()}{" "}
+                          <span className="text-xs font-tech font-normal text-gray-500">kcal / day</span>
+                        </span>
+                      </div>
+                      <span className="text-[11px] font-tech font-bold text-gray-600">
+                        {autoPlan.deficitOrSurplus < 0
+                          ? "500 kcal Deficit (Fat Loss)"
+                          : "300 kcal Surplus (Hypertrophy)"}
+                      </span>
+                    </div>
+
+                    {/* Macro distribution */}
+                    <div className="grid grid-cols-3 gap-2 text-center text-xs font-tech pt-2 border-t border-gray-100">
+                      <div className="p-1.5 bg-indigo-50/70 rounded">
+                        <span className="text-[10px] text-indigo-600 block uppercase font-bold">Protein</span>
+                        <strong className="text-indigo-900">{autoPlan.proteinGrams}g</strong>
+                      </div>
+                      <div className="p-1.5 bg-amber-50/70 rounded">
+                        <span className="text-[10px] text-amber-600 block uppercase font-bold">Carbs</span>
+                        <strong className="text-amber-900">{autoPlan.carbGrams}g</strong>
+                      </div>
+                      <div className="p-1.5 bg-rose-50/70 rounded">
+                        <span className="text-[10px] text-rose-600 block uppercase font-bold">Fats</span>
+                        <strong className="text-rose-900">{autoPlan.fatGrams}g</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tailored Workout Routine */}
+                  <div className="p-3 bg-white rounded-lg border border-indigo-100">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-gray-800">
+                        🏋️ {autoPlan.workoutPlan.title}
+                      </span>
+                      <span className="text-[10px] font-tech text-gray-500">
+                        {autoPlan.workoutPlan.frequency}
+                      </span>
+                    </div>
+                    <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                      {autoPlan.workoutPlan.routines.map((r, i) => (
+                        <div
+                          key={i}
+                          className="text-xs p-1.5 rounded bg-gray-50 flex items-start justify-between gap-2"
+                        >
+                          <div>
+                            <span className="font-bold text-gray-800 mr-1.5">{r.day}:</span>
+                            <span className="text-gray-700">{r.name}</span>
+                            <span className="text-[10px] text-gray-500 block">{r.desc}</span>
+                          </div>
+                          <span className="text-[10px] font-tech font-bold text-red-600 shrink-0">
+                            {r.burn}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Estimated Duration & Sync Profile Toggle */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pt-1">
+                    <span className="text-[11px] font-tech text-gray-500">
+                      Estimated timeline: <strong>~{autoPlan.estimatedWeeks} weeks</strong>
+                    </span>
+                    <label className="flex items-center gap-1.5 text-xs text-indigo-700 font-semibold cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={syncToProfile}
+                        onChange={(e) => setSyncToProfile(e.target.checked)}
+                        className="rounded text-indigo-600 focus:ring-indigo-500"
+                      />
+                      Sync {autoPlan.dailyCalories} kcal to my profile
+                    </label>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Target Date</label>
                 <input

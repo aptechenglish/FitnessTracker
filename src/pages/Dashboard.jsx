@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Sidebar from "../components/Sidebar";
@@ -58,12 +58,19 @@ const Dashboard = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchStats = useCallback(() => {
     getDashboardStats()
       .then((res) => setData(res.data))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    fetchStats();
+    const handleUpdate = () => fetchStats();
+    window.addEventListener("fitness_data_updated", handleUpdate);
+    return () => window.removeEventListener("fitness_data_updated", handleUpdate);
+  }, [fetchStats]);
 
   if (loading) {
     return (
@@ -75,34 +82,36 @@ const Dashboard = () => {
     );
   }
 
-  const s = data?.summary || {};
-  const currentWeight = s.currentWeight;
+  const s = data?.summary || data || {};
+  const currentWeight = s.currentWeight ?? user?.weight ?? 75;
+  const totalWorkouts = s.totalWorkouts ?? 0;
+  const weekWorkouts = s.weekWorkouts ?? (data?.weeklyActivity ? data.weeklyActivity.reduce((acc, d) => acc + (d.workouts || 0), 0) : 0);
+  const caloriesBurned = s.totalCaloriesBurned ?? s.weeklyCaloriesBurned ?? 0;
+  const caloriesIn = s.totalCaloriesIn ?? s.todayCalories ?? 0;
 
   const cards = [
     {
       title: "Workouts",
-      value: data?.summary.totalWorkouts ?? "—",
-      change: `${data?.summary.weekWorkouts ?? 0} this week`,
+      value: totalWorkouts,
+      change: `${weekWorkouts} this week`,
       icon: "workouts",
     },
     {
       title: "Calories Burned",
-      value: data?.summary.totalCaloriesBurned?.toLocaleString() ?? "—",
-      change: `${data?.summary.weekCaloriesBurned?.toLocaleString() ?? 0} this week`,
+      value: caloriesBurned ? Number(caloriesBurned).toLocaleString() : "0",
+      change: `Weekly active burn`,
       icon: "flame",
     },
     {
       title: "Calories Today",
-      value: data?.summary.totalCaloriesIn?.toLocaleString() ?? "—",
-      change: `${data?.summary.foodEntriesToday ?? 0} meals logged`,
+      value: caloriesIn ? Number(caloriesIn).toLocaleString() : "0",
+      change: `Daily meal intake`,
       icon: "utensils",
     },
     {
-      title: "Weight",
+      title: "Body Weight",
       value: currentWeight ? `${currentWeight} kg` : "—",
-      change: data?.summary.weightChange
-        ? `${data.summary.weightChange > 0 ? "+" : ""}${data.summary.weightChange} kg total`
-        : "Track in Progress",
+      change: s.targetWeight ? `Target: ${s.targetWeight} kg` : "Track in Progress",
       icon: "scale",
     },
   ];
@@ -151,9 +160,9 @@ const Dashboard = () => {
     datasets: [
       {
         data: [
-          data?.summary.totalCarbs || 0,
-          data?.summary.totalProtein || 0,
-          data?.summary.totalFat || 0,
+          data?.summary?.totalCarbs || 0,
+          data?.summary?.totalProtein || 0,
+          data?.summary?.totalFat || 0,
         ],
         backgroundColor: ["#e53935", "#c62828", "#8a8a8a"],
         borderWidth: 2,
@@ -306,7 +315,7 @@ const Dashboard = () => {
             />
             </div>
             <div className="mt-4 text-center bg-gray-800 border border-gray-700 rounded-xl p-4 text-white">
-              <p className="text-3xl font-bold text-[#e53935]">{data?.summary.totalCaloriesIn?.toLocaleString() || 0}</p>
+              <p className="text-3xl font-bold text-[#e53935]">{data?.summary?.totalCaloriesIn?.toLocaleString() || 0}</p>
               <p className="text-sm text-gray-400">calories consumed today</p>
             </div>
           </div>

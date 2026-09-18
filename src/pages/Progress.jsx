@@ -200,10 +200,10 @@ const Progress = () => {
     ? buildLineData(
         (progress?.lifting?.benchPress || []).map((l) => fmtDate(l.date)),
         liftingSlots
-          .filter((slot) => (progress.lifting[slot.key] || []).length > 0)
+          .filter((slot) => (progress?.lifting?.[slot.key] || []).length > 0)
           .map((slot) => ({
             label: slot.label,
-            data: (progress.lifting[slot.key] || []).map((l) => l.value),
+            data: (progress?.lifting?.[slot.key] || []).map((l) => l.value),
             borderColor: slot.color,
             backgroundColor: "transparent",
             tension: 0.3,
@@ -295,7 +295,7 @@ const Progress = () => {
             <div className="flex justify-center py-16">
               <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
             </div>
-          ) : chartMap[chartType].data && chartMap[chartType].data.datasets[0].data.length > 1 ? (
+          ) : chartMap[chartType].data?.datasets?.[0]?.data?.length > 1 ? (
             <div>
               <div className="flex items-center gap-3 mb-4">
                 <span className="vip-accent"><Icon name="analytics" className="w-4 h-4" /></span>

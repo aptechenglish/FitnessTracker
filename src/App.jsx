@@ -14,7 +14,6 @@ import Progress from "./pages/Progress";
 import Analytics from "./pages/Analytics";
 import Notifications from "./pages/Notifications";
 import Reminders from "./pages/Reminders";
-import SearchPage from "./pages/SearchPage";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import Support from "./pages/Support";
@@ -25,6 +24,7 @@ import WorkoutEdit from "./pages/WorkoutEdit";
 import NutritionAdd from "./pages/NutritionAdd";
 import ProgressAdd from "./pages/ProgressAdd";
 import ProfileEdit from "./pages/ProfileEdit";
+import NotFound from "./pages/NotFound";
 
 function AppRoutes() {
   const location = useLocation();
@@ -163,14 +163,6 @@ function AppRoutes() {
             }
           />
           <Route
-            path="/search"
-            element={
-              <ProtectedRoute>
-                <SearchPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
             path="/reports"
             element={
               <ProtectedRoute>
@@ -194,7 +186,7 @@ function AppRoutes() {
               </ProtectedRoute>
             }
           />
-          <Route path="*" element={<Navigate to="/welcome" replace />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </PageTransition>
   );

@@ -39,7 +39,6 @@ const Sidebar = ({ children }) => {
     { path: "/progress", label: "Progress", icon: "progress" },
     { path: "/analytics", label: "Analytics", icon: "analytics" },
     { path: "/goals", label: "Goals", icon: "goals" },
-    { path: "/search", label: "Search", icon: "search" },
     { path: "/reports", label: "Reports", icon: "reports" },
     { path: "/notifications", label: "Notifications", icon: "notifications", badge: unread },
     { path: "/reminders", label: "Reminders", icon: "reminders" },
@@ -55,16 +54,16 @@ const Sidebar = ({ children }) => {
         key={item.path}
         to={item.path}
         onClick={() => setMobileOpen(false)}
-        className={`flex items-center gap-3 px-3 py-2 rounded-lg transition ${
+        className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-tech text-xs uppercase tracking-wider font-bold transition-all duration-200 ${
           active
-            ? "bg-red-500/10 text-red-400 ring-1 ring-inset ring-red-500/40 shadow-[0_0_10px_rgba(229,57,53,0.25)]"
-            : "text-gray-300 hover:bg-gray-800 hover:text-white"
+            ? "bg-red-600 text-white shadow-[0_4px_14px_rgba(229,57,53,0.35)] scale-[1.02]"
+            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
         }`}
       >
-        <Icon name={item.icon} className="w-5 h-5 shrink-0" />
+        <Icon name={item.icon} className={`w-4 h-4 shrink-0 ${active ? "text-white" : "text-slate-500"}`} />
         {open && <span className="truncate flex-1">{item.label}</span>}
         {item.badge > 0 && (
-          <span className="bg-red-500 text-white text-xs font-bold rounded-full min-w-5 h-5 flex items-center justify-center px-1.5 shrink-0">
+          <span className={`text-xs font-bold rounded-full min-w-5 h-5 flex items-center justify-center px-1.5 shrink-0 ${active ? "bg-white text-red-600" : "bg-red-600 text-white"}`}>
             {item.badge}
           </span>
         )}
@@ -73,77 +72,89 @@ const Sidebar = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-[#f4f5f7]">
       <aside
-        className={`z-40 h-screen bg-gray-900 text-white flex flex-col transition-all duration-300 fixed left-0 top-0 overflow-y-auto no-scrollbar ${
+        className={`z-40 h-screen bg-white border-r border-slate-200 text-slate-800 flex flex-col transition-all duration-300 fixed left-0 top-0 overflow-y-auto no-scrollbar shadow-sm ${
           mobileOpen ? "w-72" : "hidden md:flex"
-        } ${open ? "md:w-64" : "md:w-20"}`}
+        } ${open ? "md:w-60" : "md:w-20"}`}
       >
-        <div className="flex items-center justify-between px-4 h-20">
-          <img src={logo} alt="Fitness Tracker Logo" className="h-16 object-contain" />
+        <div className="flex items-center gap-2 px-4 pt-4 pb-3.5 border-b border-slate-100">
+          <Link to="/welcome" className="flex items-center gap-2.5 min-w-0">
+            <img src={logo} alt="Fitness Tracker Logo" className="h-14 object-contain shrink-0" />
+            {open && (
+              <span className="font-funky font-black leading-tight uppercase tracking-wider text-slate-900">
+                <span className="block text-[11px]">Fitness</span>
+                <span className="block text-[11px] text-red-600">Tracker</span>
+              </span>
+            )}
+          </Link>
           <button
             onClick={() => setOpen(!open)}
-            className="hidden md:flex text-2xl hover:text-indigo-400 transition"
+            className="hidden md:flex items-center justify-center shrink-0 text-slate-400 hover:text-slate-800 transition p-1.5 rounded-lg hover:bg-slate-100"
             aria-label="Toggle menu"
           >
-            <Icon name={open ? "expandLeft" : "expandRight"} className="w-6 h-6" />
+            <Icon name={open ? "expandLeft" : "expandRight"} className="w-5 h-5" />
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto no-scrollbar pt-2 px-2 space-y-0.5">
+        <nav className="flex-1 overflow-y-auto no-scrollbar pt-3 px-2 space-y-1">
           {menuItems.map(navLink)}
         </nav>
 
-        <div className="p-3">
-          <div className="flex items-center gap-3 mb-2">
+        <div className="p-3 border-t border-slate-100 bg-slate-50/50">
+          <div className="flex items-center gap-3 mb-3">
             {user?.profilePicture ? (
               <img
                 src={user.profilePicture}
                 alt="Profile"
-                className="w-9 h-9 rounded-full object-cover shrink-0 ring-1 ring-white/20 shadow-[0_0_10px_rgba(0,0,0,0.4)]"
+                className="w-9 h-9 rounded-full object-cover shrink-0 ring-2 ring-red-500/20"
               />
             ) : (
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#3a3a3a] to-[#1a1a1a] ring-1 ring-white/25 flex items-center justify-center text-sm font-bold text-white/90 shrink-0 shadow-[0_0_12px_rgba(229,57,53,0.25)]">
+              <div className="w-9 h-9 rounded-full bg-slate-900 text-white flex items-center justify-center text-sm font-bold shrink-0">
                 {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+              </div>
+            )}
+            {open && (
+              <div className="truncate flex-1">
+                <p className="font-funky font-bold text-xs text-slate-900 truncate">
+                  {user?.name || "Athlete"}
+                </p>
+                <p className="text-[11px] text-slate-500 truncate font-tech">
+                  @{user?.username || "user"}
+                </p>
               </div>
             )}
           </div>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-2 justify-center bg-red-600 hover:bg-red-700 text-white py-1.5 rounded-lg text-xs font-medium transition"
+            className="w-full flex items-center gap-2 justify-center bg-red-50 hover:bg-red-100 text-red-600 border border-red-200/60 py-2 rounded-xl text-xs font-bold transition font-tech uppercase tracking-wider"
           >
-            <span className="w-4 h-4 shrink-0">
-              <Icon name="logout" className="w-4 h-4" />
-            </span>{" "}
-            Logout
+            <Icon name="logout" className="w-3.5 h-3.5" />
+            {open && "Log Out"}
           </button>
         </div>
       </aside>
 
       {mobileOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-30"
+          className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30"
           onClick={() => setMobileOpen(false)}
           aria-label="Close menu overlay"
         ></div>
       )}
 
-      <main className={`transition-all duration-300 min-w-0 relative ${open ? "md:ml-64" : "md:ml-20"} `}>
-        <div
-          className="pointer-events-none fixed right-6 bottom-6 opacity-[0.05]"
-          aria-hidden="true"
-        >
-          <img src={logo} alt="" className="w-48 h-48 object-contain" />
-        </div>
-        <div className="md:hidden sticky top-0 z-40 bg-gray-900 text-white px-4 h-14 flex items-center gap-3">
-          <button
-            onClick={() => setMobileOpen(true)}
-            className="text-2xl hover:text-indigo-400 transition"
-            aria-label="Open menu"
-          >
-            <Icon name="menu" className="w-6 h-6" />
-          </button>
-          <img src={logo} alt="Fitness Tracker Logo" className="h-10 object-contain" />
+      <main className={`transition-all duration-300 min-w-0 relative ${open ? "md:ml-60" : "md:ml-20"} `}>
+        <div className="md:hidden sticky top-0 z-40 bg-white border-b border-slate-200 text-slate-900 px-4 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-700 transition"
+              aria-label="Open menu"
+            >
+              <Icon name="menu" className="w-6 h-6" />
+            </button>
+            <img src={logo} alt="Fitness Tracker Logo" className="h-9 object-contain" />
+          </div>
         </div>
         {children}
       </main>

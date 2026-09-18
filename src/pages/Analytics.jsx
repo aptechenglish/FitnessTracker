@@ -56,6 +56,15 @@ const Analytics = () => {
     getNutritionAnalytics(nutritionPeriod).then((res) => setNutritionData(res.data)).catch(() => {});
   }, [nutritionPeriod]);
 
+  useEffect(() => {
+    const handleUpdate = () => {
+      getWorkoutAnalytics(workoutPeriod).then((res) => setWorkoutData(res.data)).catch(() => {});
+      getNutritionAnalytics(nutritionPeriod).then((res) => setNutritionData(res.data)).catch(() => {});
+    };
+    window.addEventListener("fitness_data_updated", handleUpdate);
+    return () => window.removeEventListener("fitness_data_updated", handleUpdate);
+  }, [workoutPeriod, nutritionPeriod]);
+
   const itemColor = (palette) => palette[Math.floor(Math.random() * palette.length)];
 
   const liftsOnly = workoutData?.liftProgress?.filter((l) => l.points.length > 0) || [];

@@ -5,6 +5,7 @@ import { updateProfile } from "../services/auth";
 import Sidebar from "../components/Sidebar";
 import Icon from "../components/Icon";
 import toast from "react-hot-toast";
+import { fileToResizedDataUrl } from "../utils/image";
 
 const goals = [
   { value: "lose_weight", label: "Lose Weight", icon: "activity" },
@@ -24,6 +25,7 @@ const ProfileEdit = () => {
     email: "",
     gender: "",
     height: "",
+    weight: "",
     dateOfBirth: "",
     fitnessGoal: "general_fitness",
     profilePicture: "",
@@ -37,6 +39,7 @@ const ProfileEdit = () => {
         email: user.email || "",
         gender: user.gender || "",
         height: user.height || "",
+        weight: user.weight || "",
         dateOfBirth: user.dateOfBirth ? user.dateOfBirth.split("T")[0] : "",
         fitnessGoal: user.fitnessGoal || "general_fitness",
         profilePicture: user.profilePicture || "",
@@ -48,12 +51,34 @@ const ProfileEdit = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const handlePicUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Please choose an image smaller than 5MB");
+      return;
+    }
+    try {
+      const dataUrl = await fileToResizedDataUrl(file);
+      setForm({ ...form, profilePicture: dataUrl });
+    } catch {
+      toast.error("Could not read that image. Please choose another one.");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await updateProfile(form);
-      updateUser(res.data);
+      const payload = {
+        ...form,
+        gender: form.gender || undefined,
+        height: form.height ? Number(form.height) : undefined,
+        weight: form.weight ? Number(form.weight) : undefined,
+      };
+      const res = await updateProfile(payload);
+      const updated = res.data?.user || res.data || payload;
+      updateUser({ ...user, ...updated });
       toast.success("Profile updated successfully!");
       navigate("/profile");
     } catch (error) {
@@ -131,6 +156,17 @@ const ProfileEdit = () => {
               />
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Weight (kg)</label>
+              <input
+                type="number"
+                name="weight"
+                value={form.weight}
+                onChange={handleChange}
+                placeholder="e.g. 70"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
               <input
                 type="date"
@@ -140,16 +176,39 @@ const ProfileEdit = () => {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Profile Picture URL</label>
-              <input
-                type="text"
-                name="profilePicture"
-                value={form.profilePicture}
-                onChange={handleChange}
-                placeholder="https://example.com/image.jpg"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Profile Picture</label>
+              <div className="flex items-center gap-4">
+                {form.profilePicture ? (
+                  <img
+                    src={form.profilePicture}
+                    alt="Profile Preview"
+                    className="w-16 h-16 rounded-full object-cover border-2 border-indigo-200"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-2xl font-bold">
+                    {form.name ? form.name.charAt(0).toUpperCase() : "U"}
+                  </div>
+                )}
+                <label className="inline-flex items-center gap-2 cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-800 px-5 py-2.5 rounded-lg font-semibold transition">
+                  {form.profilePicture ? "Change Photo" : "Upload Photo"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePicUpload}
+                    className="hidden"
+                  />
+                </label>
+                {form.profilePicture && (
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, profilePicture: "" })}
+                    className="text-sm text-red-600 hover:text-red-800 font-medium"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Fitness Goal</label>

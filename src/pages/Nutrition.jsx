@@ -3,28 +3,17 @@ import { useNavigate } from "react-router-dom";
 import { getFoods, updateFood, deleteFood, getFoodStats } from "../services/foods";
 import Sidebar from "../components/Sidebar";
 import Icon from "../components/Icon";
-import Reveal from "../components/Reveal";
 import toast from "react-hot-toast";
 
 const MEAL_TYPES = [
-  { value: "breakfast", label: "Breakfast", color: "bg-yellow-100 text-yellow-800", icon: "coffee" },
-  { value: "lunch", label: "Lunch", color: "bg-orange-100 text-orange-700", icon: "utensils" },
-  { value: "dinner", label: "Dinner", color: "bg-purple-100 text-purple-700", icon: "utensils" },
-  { value: "snacks", label: "Snacks", color: "bg-pink-100 text-pink-700", icon: "nutrition" },
+  { value: "breakfast", label: "Breakfast", color: "bg-amber-100 text-amber-800", icon: "coffee" },
+  { value: "lunch", label: "Lunch", color: "bg-emerald-100 text-emerald-800", icon: "utensils" },
+  { value: "dinner", label: "Dinner", color: "bg-indigo-100 text-indigo-800", icon: "utensils" },
+  { value: "snack", label: "Snacks", color: "bg-purple-100 text-purple-800", icon: "nutrition" },
 ];
 
-const getMealInfo = (value) => MEAL_TYPES.find((m) => m.value === value) || MEAL_TYPES[0];
-
-const emptyFood = () => ({
-  foodName: "",
-  quantity: "",
-  mealType: "breakfast",
-  calories: 0,
-  protein: 0,
-  carbs: 0,
-  fat: 0,
-  date: new Date().toISOString().split("T")[0],
-});
+const getMealInfo = (value) =>
+  MEAL_TYPES.find((m) => m.value === value) || MEAL_TYPES[0];
 
 const Nutrition = () => {
   const navigate = useNavigate();
@@ -32,7 +21,16 @@ const Nutrition = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState(emptyFood());
+  const [form, setForm] = useState({
+    name: "",
+    quantity: 1,
+    mealType: "breakfast",
+    calories: 0,
+    protein: 0,
+    carbs: 0,
+    fats: 0,
+    date: new Date().toISOString().split("T")[0],
+  });
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [filterMeal, setFilterMeal] = useState("all");
   const [search, setSearch] = useState("");
@@ -42,13 +40,13 @@ const Nutrition = () => {
   const loadFoods = useCallback(async () => {
     setLoading(true);
     try {
-      const params = { dateFrom: `${selectedDate}T00:00:00`, dateTo: `${selectedDate}T23:59:59` };
+      const params = { date: selectedDate };
       if (filterMeal !== "all") params.mealType = filterMeal;
       if (search) params.search = search;
       const res = await getFoods(params);
       setFoods(res.data);
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to load foods");
+      toast.error("Failed to load food logs");
     } finally {
       setLoading(false);
     }
@@ -69,41 +67,44 @@ const Nutrition = () => {
   const openEdit = (food) => {
     setEditing(food._id);
     setForm({
-      foodName: food.foodName,
-      quantity: food.quantity,
-      mealType: food.mealType,
-      calories: food.calories,
-      protein: food.protein,
-      carbs: food.carbs,
-      fat: food.fat,
-      date: food.date.split("T")[0],
+      name: food.name || food.foodName || "",
+      quantity: food.quantity || 1,
+      mealType: food.mealType || "breakfast",
+      calories: food.calories || 0,
+      protein: food.protein || 0,
+      carbs: food.carbs || 0,
+      fats: food.fats || food.fat || 0,
+      date: food.date ? food.date.split("T")[0] : selectedDate,
     });
     setShowModal(true);
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm({
-      ...form,
-      [name]: name === "foodName" || name === "quantity" || name === "mealType" || name === "date" ? value : Number(value) || 0,
-    });
+    setForm((prev) => ({
+      ...prev,
+      [name]:
+        name === "name" || name === "mealType" || name === "date"
+          ? value
+          : Number(value) || 0,
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.foodName) {
+    if (!form.name) {
       toast.error("Food name is required");
       return;
     }
     setSaving(true);
     try {
-      const payload = { ...form, date: new Date(form.date).toISOString() };
-      await updateFood(editing, payload);
+      await updateFood(editing, form);
+      window.dispatchEvent(new CustomEvent("fitness_data_updated", { detail: { type: "food" } }));
       toast.success("Food entry updated!");
       setShowModal(false);
       loadFoods();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to save food");
+      toast.error("Failed to update food entry");
     } finally {
       setSaving(false);
     }
@@ -113,308 +114,358 @@ const Nutrition = () => {
     if (!window.confirm("Delete this food entry?")) return;
     try {
       await deleteFood(id);
-      toast.success("Food entry deleted");
+      window.dispatchEvent(new CustomEvent("fitness_data_updated", { detail: { type: "food" } }));
+      toast.success("Food entry removed");
       loadFoods();
     } catch (error) {
-      toast.error("Failed to delete food entry");
+      toast.error("Failed to delete entry");
     }
   };
 
-  const macroBar = (label, grams, color) => {
-    const max = stats?.totals.calories || 1;
-    const width = max > 0 ? Math.min(100, (grams / max) * 100) : 0;
-    return (
-      <div className="flex flex-col gap-1">
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-600">{label}</span>
-          <span className="font-semibold text-gray-800">{grams}g</span>
-        </div>
-        <div className="w-full h-2.5 bg-gray-200 rounded-full">
-          <div className={`h-2.5 rounded-full ${color}`} style={{ width: `${width}%` }}></div>
-        </div>
-      </div>
-    );
-  };
+  const totalCals = foods.reduce((acc, f) => acc + (f.calories || 0), 0);
+  const totalP = foods.reduce((acc, f) => acc + (f.protein || 0), 0);
+  const totalC = foods.reduce((acc, f) => acc + (f.carbs || 0), 0);
+  const totalF = foods.reduce((acc, f) => acc + (f.fats || f.fat || 0), 0);
 
   return (
     <Sidebar>
       <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        <div className="vip-banner flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-          <div className="relative z-10">
-            <h1 className="text-3xl font-bold flex items-center gap-3"><Icon name="utensils" className="w-7 h-7" /> Nutrition Tracking</h1>
-            <p className="text-white/75 mt-1">Track your daily food intake and macros</p>
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
+          <div>
+            <h1 className="font-funky text-3xl font-extrabold text-slate-900">
+              Nutrition & <span className="text-red-600">Meals</span>
+            </h1>
+            <p className="font-tech text-sm text-slate-500 mt-1">
+              Track calories, macros, and photo food logs
+            </p>
           </div>
-          <button
-            onClick={openAdd}
-            className="vip-btn-primary px-6 py-2.5 rounded-lg font-semibold transition flex items-center gap-2 relative z-10"
-          >
-            <span className="text-lg">+</span> Add Food
-          </button>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={openAdd}
+              className="vip-btn-primary px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center gap-2"
+            >
+              <Icon name="plus" className="w-4 h-4" />
+              + Log Meal
+            </button>
+          </div>
         </div>
 
-        <Reveal>
-        <div className="vip-card p-6 mb-8">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="vip-card-title"><span className="vip-accent"><Icon name="nutrition" className="w-4 h-4" /></span>Daily Summary</h2>
+        {/* Daily Summary Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="stat-card p-5 rounded-2xl">
+            <span className="font-tech text-[10px] uppercase font-bold text-slate-400">Total Calories</span>
+            <div className="flex items-baseline gap-1 mt-1">
+              <span className="font-funky text-2xl font-black text-slate-900">{totalCals.toLocaleString()}</span>
+              <span className="font-tech text-xs text-slate-500 font-bold">kcal</span>
+            </div>
+            <span className="text-xs font-tech text-slate-400 mt-1 block">Logged today</span>
+          </div>
+
+          <div className="stat-card p-5 rounded-2xl">
+            <span className="font-tech text-[10px] uppercase font-bold text-slate-400">Protein</span>
+            <div className="flex items-baseline gap-1 mt-1">
+              <span className="font-funky text-2xl font-black text-red-600">{totalP}</span>
+              <span className="font-tech text-xs text-slate-500 font-bold">grams</span>
+            </div>
+            <span className="text-xs font-tech text-slate-400 mt-1 block">Muscle recovery</span>
+          </div>
+
+          <div className="stat-card p-5 rounded-2xl">
+            <span className="font-tech text-[10px] uppercase font-bold text-slate-400">Carbs</span>
+            <div className="flex items-baseline gap-1 mt-1">
+              <span className="font-funky text-2xl font-black text-amber-600">{totalC}</span>
+              <span className="font-tech text-xs text-slate-500 font-bold">grams</span>
+            </div>
+            <span className="text-xs font-tech text-slate-400 mt-1 block">Daily energy</span>
+          </div>
+
+          <div className="stat-card p-5 rounded-2xl">
+            <span className="font-tech text-[10px] uppercase font-bold text-slate-400">Fats</span>
+            <div className="flex items-baseline gap-1 mt-1">
+              <span className="font-funky text-2xl font-black text-blue-600">{totalF}</span>
+              <span className="font-tech text-xs text-slate-500 font-bold">grams</span>
+            </div>
+            <span className="text-xs font-tech text-slate-400 mt-1 block">Healthy fats</span>
+          </div>
+        </div>
+
+        {/* Filter and Date Bar */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm mb-6 flex flex-col md:flex-row gap-4 justify-between items-center">
+          <div className="flex items-center gap-3 w-full md:w-auto">
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="px-3 py-2 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-[#0f0f0f] text-white"
+              className="px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-tech font-bold text-slate-800 focus:outline-none focus:border-red-500"
             />
-          </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-            <div className="bg-gradient-to-br from-[#c62828] to-[#e53935] rounded-xl p-5 text-white border border-red-400/30 shadow-[0_8px_18px_-8px_rgba(229,57,53,0.6)]">
-              <div className="flex justify-between">
-                <Icon name="flame" className="w-8 h-8 text-white/90" />
-              </div>
-              <p className="text-sm text-white/85">Calories</p>
-              <p className="text-2xl font-bold">{stats?.totals.calories || 0}</p>
-              <p className="text-xs text-white/70">{stats?.entries || 0} entries</p>
-            </div>
-            <div className="vip-card rounded-xl p-5">
-              <Icon name="workouts" className="w-8 h-8 text-[#e53935]" />
-              <p className="text-sm text-gray-400 mt-2">Protein</p>
-              <p className="text-2xl font-bold">{stats?.totals.protein || 0}g</p>
-            </div>
-            <div className="vip-card rounded-xl p-5">
-              <Icon name="wheat" className="w-8 h-8 text-[#e53935]" />
-              <p className="text-sm text-gray-400 mt-2">Carbs</p>
-              <p className="text-2xl font-bold">{stats?.totals.carbs || 0}g</p>
-            </div>
-            <div className="vip-card rounded-xl p-5">
-              <Icon name="droplet" className="w-8 h-8 text-[#e53935]" />
-              <p className="text-sm text-gray-400 mt-2">Fat</p>
-              <p className="text-2xl font-bold">{stats?.totals.fat || 0}g</p>
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+              <button
+                onClick={() => setFilterMeal("all")}
+                className={`px-3 py-1.5 rounded-xl font-tech text-xs uppercase font-bold transition ${
+                  filterMeal === "all" ? "bg-red-600 text-white shadow-sm" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                All Meals
+              </button>
+              {MEAL_TYPES.map((m) => (
+                <button
+                  key={m.value}
+                  onClick={() => setFilterMeal(m.value)}
+                  className={`px-3 py-1.5 rounded-xl font-tech text-xs uppercase font-bold whitespace-nowrap transition ${
+                    filterMeal === m.value ? "bg-red-600 text-white shadow-sm" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  {m.label}
+                </button>
+              ))}
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {macroBar("Protein", stats?.totals.protein || 0, "bg-[#e53935]")}
-            {macroBar("Carbs", stats?.totals.carbs || 0, "bg-[#c62828]")}
-            {macroBar("Fat", stats?.totals.fat || 0, "bg-[#8a2a2a]")}
+
+          <div className="w-full md:w-64 relative">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search logged food..."
+              className="w-full px-4 py-2 pl-9 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 text-xs focus:outline-none focus:border-red-500"
+            />
+            <span className="absolute left-3 top-2.5 text-slate-400">
+              <Icon name="search" className="w-4 h-4" />
+            </span>
           </div>
         </div>
-        </Reveal>
 
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search foods..."
-            className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-          />
-          <select
-            value={filterMeal}
-            onChange={(e) => setFilterMeal(e.target.value)}
-            className="px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-          >
-            <option value="all">All Meals</option>
-            {MEAL_TYPES.map((m) => (
-              <option key={m.value} value={m.value}>{m.label}</option>
-            ))}
-          </select>
-        </div>
-
+        {/* Food Cards Grid */}
         {loading ? (
           <div className="flex justify-center py-20">
-            <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-10 h-10 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : foods.length === 0 ? (
-          <div className="vip-card p-16 text-center">
-            <Icon name="utensils" className="w-16 h-16 mx-auto mb-4 text-gray-500" />
-            <h3 className="text-xl font-semibold text-gray-200 mb-2">No food entries for this day</h3>
-            <p className="text-gray-500 mb-6">Log your first meal to start tracking your nutrition!</p>
-            <button onClick={openAdd} className="vip-btn-primary px-6 py-3 rounded-lg font-semibold transition">
-              Add Food
+          <div className="bg-white rounded-3xl border border-dashed border-slate-200 p-12 text-center shadow-sm">
+            <div className="w-16 h-16 mx-auto mb-3 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center text-3xl">
+              🥗
+            </div>
+            <h3 className="font-funky font-bold text-lg text-slate-900 mb-1">
+              No meals logged for this date
+            </h3>
+            <p className="font-tech text-xs text-slate-500 mb-6">
+              Use Option 1 (Photo) or Option 2 (Manual Form) to log your first meal!
+            </p>
+            <button
+              onClick={openAdd}
+              className="vip-btn-primary px-6 py-2.5 rounded-xl font-funky font-bold text-xs uppercase tracking-wider"
+            >
+              + Add Meal Entry
             </button>
           </div>
         ) : (
-          <Reveal>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {foods.map((food) => {
               const meal = getMealInfo(food.mealType);
+              const foodTitle = food.name || food.foodName;
+
               return (
-                <div key={food._id} className="vip-card hover:shadow-xl transition p-6">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <Icon name={meal.icon} className="w-8 h-8 text-[#e53935] shrink-0" />
-                        <div>
-                          <h3 className="font-semibold text-gray-100">{food.foodName}</h3>
-                          {food.quantity && <p className="text-sm text-gray-500">{food.quantity}</p>}
-                        </div>
-                      </div>
-                      <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${meal.color}`}>
+                <div
+                  key={food._id}
+                  className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col justify-between"
+                >
+                  {/* Photo if present */}
+                  {food.image && (
+                    <div className="h-44 bg-slate-100 overflow-hidden relative">
+                      <img
+                        src={food.image}
+                        alt={foodTitle}
+                        className="w-full h-full object-cover"
+                      />
+                      <span className={`absolute top-3 left-3 text-[10px] font-tech font-bold uppercase px-2.5 py-1 rounded-lg ${meal.color}`}>
                         {meal.label}
                       </span>
                     </div>
+                  )}
 
-                    <div className="flex justify-center mb-3">
-                      <p className="text-3xl font-bold text-gray-100">{food.calories}</p>
-                      <span className="text-gray-500"> cal</span>
+                  <div className="p-5 flex-1 flex flex-col justify-between">
+                    <div>
+                      {!food.image && (
+                        <div className="flex justify-between items-start mb-2">
+                          <span className={`text-[10px] font-tech font-bold uppercase px-2.5 py-1 rounded-lg ${meal.color}`}>
+                            {meal.label}
+                          </span>
+                        </div>
+                      )}
+
+                      <h3 className="font-funky font-bold text-lg text-slate-900 mb-1">
+                        {foodTitle}
+                      </h3>
+
+                      <div className="flex items-baseline gap-1 mb-3">
+                        <span className="font-funky text-2xl font-black text-slate-900">{food.calories}</span>
+                        <span className="font-tech text-xs text-slate-500 font-bold">calories</span>
+                      </div>
+
+                      {/* Macros pill */}
+                      <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-center font-tech text-xs">
+                        <div>
+                          <span className="text-[10px] uppercase text-slate-400 block font-bold">Protein</span>
+                          <span className="font-bold text-red-600">{food.protein || 0}g</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] uppercase text-slate-400 block font-bold">Carbs</span>
+                          <span className="font-bold text-amber-600">{food.carbs || 0}g</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] uppercase text-slate-400 block font-bold">Fats</span>
+                          <span className="font-bold text-blue-600">{food.fats || food.fat || 0}g</span>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="flex gap-2 justify-center my-3">
-                      <span className="text-xs bg-[#2a1010] text-[#e53935] px-2 py-1 rounded inline-flex items-center gap-1"><Icon name="workouts" className="w-3.5 h-3.5" /> {food.protein}g</span>
-                      <span className="text-xs bg-[#2a1010] text-[#e53935] px-2 py-1 rounded inline-flex items-center gap-1"><Icon name="wheat" className="w-3.5 h-3.5" /> {food.carbs}g</span>
-                      <span className="text-xs bg-[#2a1010] text-[#e53935] px-2 py-1 rounded inline-flex items-center gap-1"><Icon name="droplet" className="w-3.5 h-3.5" /> {food.fat}g</span>
-                    </div>
-
-                    <div className="flex gap-3 mt-4 border-t pt-4">
+                    {/* Actions */}
+                    <div className="flex gap-2 pt-4 mt-4 border-t border-slate-100">
                       <button
                         onClick={() => openEdit(food)}
-                        className="flex-1 vip-btn-primary py-2 rounded-lg text-sm font-medium transition"
+                        className="flex-1 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-tech font-bold text-xs uppercase tracking-wider transition text-center"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDelete(food._id)}
-                        className="flex-1 bg-[#2a2a2a] hover:bg-gray-700 text-white py-2 rounded-lg text-sm font-medium transition"
+                        className="py-1.5 px-3 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 font-tech font-bold text-xs uppercase tracking-wider transition"
                       >
                         Delete
                       </button>
                     </div>
+                  </div>
                 </div>
               );
             })}
           </div>
-          </Reveal>
         )}
-      </main>
 
-      {showModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-4 flex justify-between items-center sticky top-0">
-              <h2 className="text-xl font-bold text-white">
-                Edit Food Entry
-              </h2>
-              <button onClick={() => setShowModal(false)} className="text-white text-2xl hover:text-gray-200">
-                <Icon name="x" className="w-6 h-6" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Food Name *</label>
-                <input
-                  type="text"
-                  name="foodName"
-                  value={form.foodName}
-                  onChange={handleChange}
-                  placeholder="e.g. Eggs + Bread"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
+        {/* EDIT MODAL */}
+        {showModal && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-3xl max-w-md w-full p-6 border border-slate-200 shadow-2xl">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="font-funky font-bold text-lg text-slate-900">
+                  Edit Food Entry
+                </h2>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="text-slate-400 hover:text-slate-800 p-1 rounded-full hover:bg-slate-100"
+                >
+                  ✕
+                </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                  <label className="block font-tech text-xs uppercase font-bold text-slate-700 mb-1">
+                    Food Name
+                  </label>
                   <input
                     type="text"
-                    name="quantity"
-                    value={form.quantity}
+                    name="name"
+                    value={form.name}
                     onChange={handleChange}
-                    placeholder="e.g. 3 eggs"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-red-500"
+                    required
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Meal Type</label>
-                  <select
-                    name="mealType"
-                    value={form.mealType}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-tech text-xs uppercase font-bold text-slate-700 mb-1">
+                      Calories
+                    </label>
+                    <input
+                      type="number"
+                      name="calories"
+                      value={form.calories}
+                      onChange={handleChange}
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm font-tech"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-tech text-xs uppercase font-bold text-slate-700 mb-1">
+                      Meal Type
+                    </label>
+                    <select
+                      name="mealType"
+                      value={form.mealType}
+                      onChange={handleChange}
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm bg-white font-tech"
+                    >
+                      {MEAL_TYPES.map((m) => (
+                        <option key={m.value} value={m.value}>
+                          {m.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="block font-tech text-[10px] uppercase font-bold text-slate-600 mb-1">
+                      Protein (g)
+                    </label>
+                    <input
+                      type="number"
+                      name="protein"
+                      value={form.protein}
+                      onChange={handleChange}
+                      className="w-full px-2.5 py-2 rounded-lg border border-slate-200 text-xs font-tech font-bold text-red-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-tech text-[10px] uppercase font-bold text-slate-600 mb-1">
+                      Carbs (g)
+                    </label>
+                    <input
+                      type="number"
+                      name="carbs"
+                      value={form.carbs}
+                      onChange={handleChange}
+                      className="w-full px-2.5 py-2 rounded-lg border border-slate-200 text-xs font-tech font-bold text-amber-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-tech text-[10px] uppercase font-bold text-slate-600 mb-1">
+                      Fats (g)
+                    </label>
+                    <input
+                      type="number"
+                      name="fats"
+                      value={form.fats}
+                      onChange={handleChange}
+                      className="w-full px-2.5 py-2 rounded-lg border border-slate-200 text-xs font-tech font-bold text-blue-600"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-3">
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="flex-1 vip-btn-primary py-2.5 rounded-xl font-funky font-bold text-xs uppercase tracking-wider"
                   >
-                    {MEAL_TYPES.map((m) => (
-                      <option key={m.value} value={m.value}>{m.label}</option>
-                    ))}
-                  </select>
+                    {saving ? "Saving..." : "Save Changes"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-tech font-bold text-xs uppercase"
+                  >
+                    Cancel
+                  </button>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Calories</label>
-                  <input
-                    type="number"
-                    name="calories"
-                    value={form.calories || ""}
-                    onChange={handleChange}
-                    placeholder="e.g. 450"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Protein (g)</label>
-                  <input
-                    type="number"
-                    name="protein"
-                    value={form.protein || ""}
-                    onChange={handleChange}
-                    placeholder="e.g. 25"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Carbs (g)</label>
-                  <input
-                    type="number"
-                    name="carbs"
-                    value={form.carbs || ""}
-                    onChange={handleChange}
-                    placeholder="e.g. 40"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Fat (g)</label>
-                  <input
-                    type="number"
-                    name="fat"
-                    value={form.fat || ""}
-                    onChange={handleChange}
-                    placeholder="e.g. 15"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                <input
-                  type="date"
-                  name="date"
-                  value={form.date}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-
-              <div className="flex gap-4">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-lg font-semibold transition disabled:opacity-50"
-                >
-                  {saving ? "Saving..." : editing ? "Save Changes" : "Add Food"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 rounded-lg font-semibold transition"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </main>
     </Sidebar>
   );
 };
