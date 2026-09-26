@@ -9,12 +9,14 @@ const foodSchema = new mongoose.Schema(
     },
     name: {
       type: String,
-      required: true,
+      trim: true,
+    },
+    foodName: {
+      type: String,
       trim: true,
     },
     mealType: {
       type: String,
-      enum: ["breakfast", "lunch", "dinner", "snack"],
       default: "lunch",
     },
     calories: {
@@ -27,6 +29,10 @@ const foodSchema = new mongoose.Schema(
       default: 0,
     },
     carbs: {
+      type: Number,
+      default: 0,
+    },
+    fat: {
       type: Number,
       default: 0,
     },
@@ -53,6 +59,17 @@ const foodSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+foodSchema.pre("validate", function () {
+  if (!this.name && this.foodName) this.name = this.foodName;
+  if (!this.foodName && this.name) this.foodName = this.name;
+  if (this.fat === undefined && this.fats !== undefined) this.fat = this.fats;
+  if (this.fats === undefined && this.fat !== undefined) this.fats = this.fat;
+  if (!this.name && !this.foodName) {
+    this.name = "Meal";
+    this.foodName = "Meal";
+  }
+});
 
 const Food = mongoose.model("Food", foodSchema);
 export default Food;

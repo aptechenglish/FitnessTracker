@@ -17,7 +17,10 @@ const workoutSchema = new mongoose.Schema(
     },
     title: {
       type: String,
-      required: true,
+      trim: true,
+    },
+    workoutName: {
+      type: String,
       trim: true,
     },
     category: {
@@ -28,7 +31,10 @@ const workoutSchema = new mongoose.Schema(
     },
     duration: {
       type: Number, // in minutes
-      required: true,
+      default: 45,
+    },
+    durationMinutes: {
+      type: Number,
       default: 45,
     },
     caloriesBurned: {
@@ -66,6 +72,17 @@ const workoutSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+workoutSchema.pre("validate", function () {
+  if (!this.title && this.workoutName) this.title = this.workoutName;
+  if (!this.workoutName && this.title) this.workoutName = this.title;
+  if (!this.duration && this.durationMinutes) this.duration = this.durationMinutes;
+  if (!this.durationMinutes && this.duration) this.durationMinutes = this.duration;
+  if (!this.title && !this.workoutName) {
+    this.title = "Workout Session";
+    this.workoutName = "Workout Session";
+  }
+});
 
 const Workout = mongoose.model("Workout", workoutSchema);
 export default Workout;

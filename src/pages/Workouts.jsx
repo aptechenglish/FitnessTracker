@@ -176,10 +176,15 @@ const Workouts = () => {
     }
 
     try {
+      const workoutTitle = (logForm.title || "Workout").trim();
+      const dur = Number(logForm.duration) || 30;
       const payload = {
-        title: logForm.title,
+        title: workoutTitle,
+        workoutName: workoutTitle,
+        name: workoutTitle,
         category: logForm.category,
-        duration: Number(logForm.duration) || 30,
+        duration: dur,
+        durationMinutes: dur,
         caloriesBurned: Number(logForm.caloriesBurned) || 200,
         intensity: logForm.intensity,
         date: logForm.date,
@@ -188,7 +193,7 @@ const Workouts = () => {
         notes: logForm.notes,
         exercises: [
           {
-            name: logForm.title,
+            name: workoutTitle,
             sets: Number(logForm.sets) || 3,
             reps: Number(logForm.reps) || 10,
             weight: Number(logForm.weight) || 0,

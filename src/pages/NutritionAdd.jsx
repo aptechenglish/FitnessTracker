@@ -133,9 +133,18 @@ const NutritionAdd = () => {
 
     setSaving(true);
     try {
+      const foodTitle = form.name.trim();
+      const fatsVal = Number(form.fats) || 0;
       await createFood({
         ...form,
-        name: form.name.trim(),
+        name: foodTitle,
+        foodName: foodTitle,
+        fat: fatsVal,
+        fats: fatsVal,
+        calories: Number(form.calories) || 0,
+        protein: Number(form.protein) || 0,
+        carbs: Number(form.carbs) || 0,
+        mealType: form.mealType === "snack" ? "snacks" : form.mealType,
         date: new Date(form.date).toISOString(),
       });
       window.dispatchEvent(new CustomEvent("fitness_data_updated", { detail: { type: "food" } }));

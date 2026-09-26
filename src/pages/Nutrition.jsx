@@ -98,7 +98,19 @@ const Nutrition = () => {
     }
     setSaving(true);
     try {
-      await updateFood(editing, form);
+      const foodTitle = form.name.trim();
+      const fatsVal = Number(form.fats) || 0;
+      await updateFood(editing, {
+        ...form,
+        name: foodTitle,
+        foodName: foodTitle,
+        fat: fatsVal,
+        fats: fatsVal,
+        calories: Number(form.calories) || 0,
+        protein: Number(form.protein) || 0,
+        carbs: Number(form.carbs) || 0,
+        mealType: form.mealType === "snack" ? "snacks" : form.mealType,
+      });
       window.dispatchEvent(new CustomEvent("fitness_data_updated", { detail: { type: "food" } }));
       toast.success("Food entry updated!");
       setShowModal(false);
