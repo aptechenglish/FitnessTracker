@@ -4,7 +4,7 @@ const token = () => localStorage.getItem("token");
 const BASE = import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL.replace("/api", "")
   : import.meta.env.PROD
-    ? "https://fitness-tracker-backend-ten.vercel.app"
+    ? "https://fitnesstracker-production-81be.up.railway.app"
     : "http://localhost:5000";
 
 const download = async (endpoint, filename) => {

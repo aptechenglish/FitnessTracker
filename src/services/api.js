@@ -1,9 +1,9 @@
-﻿import axios from "axios";
+import axios from "axios";
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
   (import.meta.env.PROD
-    ? "https://fitness-tracker-backend-ten.vercel.app/api"
+    ? "https://fitnesstracker-production-81be.up.railway.app/api"
     : "http://localhost:5000/api");
 
 const api = axios.create({
